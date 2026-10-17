@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import re
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.api.dependencies import ApplicationServices, get_services
 from src.api.schemas import CreateUserRequest, UserResponse
@@ -26,6 +28,38 @@ async def create_user(
     )
 
     return UserResponse.model_validate(user)
+
+
+@router.get(
+    "",
+    response_model=list[UserResponse],
+)
+async def list_users(
+    filter_expression: Annotated[
+        str,
+        Query(alias="$filter"),
+    ],
+    services: ApplicationServices = Depends(get_services),
+) -> list[UserResponse]:
+    match = re.fullmatch(
+        r"\s*chatid\s+eq\s+(\d+)\s*",
+        filter_expression,
+        flags=re.IGNORECASE,
+    )
+
+    if not match:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Supported filter: chatid eq <integer>",
+        )
+
+    chatid = int(match.group(1))
+    user = await services.users.get_by_chatid(chatid)
+
+    if user is None:
+        return []
+
+    return [UserResponse.model_validate(user)]
 
 
 @router.get(
