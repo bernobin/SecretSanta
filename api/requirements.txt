@@ -1,0 +1,9 @@
+python-telegram-bot
+SQLAlchemy[asyncio]
+sqlacodegen
+fastapi
+uvicorn[standard]
+httpx
+pydantic
+asyncpg
+psycopg[binary]
