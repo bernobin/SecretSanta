@@ -17,6 +17,15 @@ services:
       timeout: 5s
       retries: 10
 
+  adminer:
+    image: adminer:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
   api:
     build:
       context: .
@@ -36,14 +45,22 @@ services:
       db:
         condition: service_healthy
 
-  adminer:
-    image: adminer:latest
+  cli:
+    build:
+      context: .
+      dockerfile: cli/Dockerfile
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:8080:8080"
+    init: true
+    environment:
+      API_BASE_URL: http://api:8000
+      PYTHONUNBUFFERED: "1"
+    stdin_open: true
+    tty: true
     depends_on:
-      db:
-        condition: service_healthy
+      api:
+        condition: service_started
+
 
 volumes:
   postgres_data:
+  telegram_bot_data:
