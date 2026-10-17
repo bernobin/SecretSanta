@@ -60,7 +60,5 @@ services:
       api:
         condition: service_started
 
-
 volumes:
   postgres_data:
-  telegram_bot_data:
