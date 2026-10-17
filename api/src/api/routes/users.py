@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from api.src.api.dependencies import ApplicationServices, get_services
-from api.src.api.schemas import CreateUserRequest, UserResponse
+from src.api.dependencies import ApplicationServices, get_services
+from src.api.schemas import CreateUserRequest, UserResponse
 
 router = APIRouter(
     prefix="/users",

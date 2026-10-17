@@ -2,15 +2,14 @@ from datetime import datetime, timezone
 from typing import TypedDict
 import secrets
 
-from api.src.models import Participant, Sessions
-from api.src.repositories import (
-    SessionRepository,
-    ParticipantRepository,
-    UserRepository,
-    GiftAssignmentRepository,
-)
-from api.src.services.matching_generator import MatchingGenerator
-from api.src.services.matching_presenter import (
+from src.models import Participant, Sessions
+from src.repositories.user_repository import UserRepository
+from src.repositories.session_repository import SessionRepository
+from src.repositories.gift_assignment_repository import GiftAssignmentRepository
+from src.repositories.participant_repository import ParticipantRepository
+
+from src.services.matching_generator import MatchingGenerator
+from src.services.matching_presenter import (
     MatchingPresenter,
     RevealedMatching,
     AnonymizedMatching,

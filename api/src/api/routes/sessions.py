@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 
-from api.src.api.dependencies import ApplicationServices, get_services
-from api.src.api.schemas import (
+from src.api.dependencies import ApplicationServices, get_services
+from src.api.schemas import (
     CreateSessionRequest,
     SessionResponse,
     SessionStatusResponse,

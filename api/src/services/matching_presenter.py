@@ -1,7 +1,7 @@
 from typing import TypedDict
 
-from api.src.models import Participant, GiftAssignment
-from api.src.repositories import UserRepository
+from src.models import Participant, GiftAssignment
+from src.repositories.user_repository import UserRepository
 
 
 class RevealedMatching(TypedDict):

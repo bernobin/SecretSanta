@@ -1,5 +1,5 @@
-from api.src.models import Users
-from api.src.repositories import UserRepository
+from src.models import Users
+from src.repositories.user_repository import UserRepository
 
 
 class UserService:

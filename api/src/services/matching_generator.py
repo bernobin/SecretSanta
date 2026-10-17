@@ -1,7 +1,7 @@
 import secrets
 from collections.abc import Sequence
 
-from api.src.models import Participant
+from src.models import Participant
 
 
 class MatchingGenerator:

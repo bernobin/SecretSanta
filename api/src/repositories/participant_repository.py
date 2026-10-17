@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.src.models import Participant
+from src.models import Participant
 
 
 class ParticipantRepository:

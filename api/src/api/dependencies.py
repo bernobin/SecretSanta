@@ -2,26 +2,22 @@ from collections.abc import AsyncIterator
 
 from fastapi import Request
 
-# from bootstrap import ApplicationServices, create_services
-from api.src.classes.database import Database
+from src.classes.database import Database
 
 import os
 from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.src.services import (
-    SessionService,
-    UserService,
-    MatchingGenerator,
-    MatchingPresenter,
-)
-from api.src.repositories import (
-    UserRepository,
-    SessionRepository,
-    ParticipantRepository,
-    GiftAssignmentRepository,
-)
+from src.services.sessions_service import SessionService
+from src.services.user_service import UserService
+from src.services.matching_generator import MatchingGenerator
+from src.services.matching_presenter import MatchingPresenter
+
+from src.repositories.user_repository import UserRepository
+from src.repositories.session_repository import SessionRepository
+from src.repositories.participant_repository import ParticipantRepository
+from src.repositories.gift_assignment_repository import GiftAssignmentRepository
 
 
 @dataclass

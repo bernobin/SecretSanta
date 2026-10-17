@@ -5,14 +5,14 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import IntegrityError
 
-from api.src.api.routes import sessions
-from api.src.classes.database import Database
-from api.src.api.errors import (
+from src.api.routes import sessions
+from src.classes.database import Database
+from src.api.errors import (
     handle_integrity_error,
     handle_validation_error,
     handle_value_error,
 )
-from api.src.api.routes import users
+from src.api.routes import users
 
 
 @asynccontextmanager
