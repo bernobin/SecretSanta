@@ -1,5 +1,6 @@
 
 from telegram import Update
+from telegram.constants import ChatType
 from telegram.ext import ContextTypes
 
 from services.api_client import APIError
@@ -10,6 +11,11 @@ from services.common import (
 
 
 async def join(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat
+
+    if not chat or chat.type != ChatType.PRIVATE:
+        return
+
     user = await require_registered_user(update, context)
     if not user:
         return
