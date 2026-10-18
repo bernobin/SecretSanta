@@ -37,7 +37,6 @@ class UserService:
         """Retrieve a user by their external Telegram ID."""
         return await self._users.get_by_chatid(chatid)
 
-
     async def get_or_create_telegram_user(
         self,
         *,

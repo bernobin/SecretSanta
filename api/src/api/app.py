@@ -45,10 +45,7 @@ def create_app() -> FastAPI:
         handle_integrity_error,
     )
 
-    app.add_exception_handler(
-        ValueError, 
-        handle_value_error
-    )
+    app.add_exception_handler(ValueError, handle_value_error)
 
     return app
 

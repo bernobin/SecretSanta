@@ -59,7 +59,6 @@ def create_services(db: AsyncSession) -> ApplicationServices:
     )
 
 
-
 async def get_services(
     request: Request,
 ) -> AsyncIterator[ApplicationServices]:
@@ -68,5 +67,3 @@ async def get_services(
     async with database.transaction() as db:
         services = create_services(db)
         yield services
-
-

@@ -29,11 +29,10 @@ async def handle_integrity_error(
         status_code=409,
         content={
             "error": "conflict",
-            "message": (
-                "The request conflicts with existing database data."
-            ),
+            "message": ("The request conflicts with existing database data."),
         },
     )
+
 
 async def handle_value_error(
     request: Request,

@@ -54,9 +54,7 @@ class SessionService:
             raise ValueError("Session name cannot be empty.")
 
         if await self._sessions.get_by_name(sessionname) is not None:
-            raise ValueError(
-                f"Session '{sessionname}' already exists."
-            )
+            raise ValueError(f"Session '{sessionname}' already exists.")
 
         if await self._users.get_by_id(admin_userid) is None:
             raise ValueError("Administrator does not exist.")
@@ -75,16 +73,12 @@ class SessionService:
     ) -> Sessions:
         """Resolve a session by name, optionally locking its database row."""
         if for_update:
-            session = await self._sessions.get_by_name_for_update(
-                sessionname
-            )
+            session = await self._sessions.get_by_name_for_update(sessionname)
         else:
             session = await self._sessions.get_by_name(sessionname)
 
         if session is None:
-            raise ValueError(
-                f"Session '{sessionname}' does not exist."
-            )
+            raise ValueError(f"Session '{sessionname}' does not exist.")
 
         return session
 
@@ -101,36 +95,29 @@ class SessionService:
         )
 
         if session.status != "new":
-            raise ValueError(
-                "You can only join a session that has not started."
-            )
+            raise ValueError("You can only join a session that has not started.")
 
         if await self._users.get_by_id(user_id) is None:
             raise ValueError("User does not exist.")
 
-        if await self._participants.get_by_user(
-            session.sessionid,
-            user_id,
-        ) is not None:
+        if (
+            await self._participants.get_by_user(
+                session.sessionid,
+                user_id,
+            )
+            is not None
+        ):
             raise ValueError("You are already signed up.")
 
-        participants = await self._participants.get_by_session(
-            session.sessionid
-        )
-        used_emojis = {
-            participant.emoji for participant in participants
-        }
+        participants = await self._participants.get_by_session(session.sessionid)
+        used_emojis = {participant.emoji for participant in participants}
 
         available_emojis = [
-            emoji
-            for emoji in self._emoji_pool
-            if emoji not in used_emojis
+            emoji for emoji in self._emoji_pool if emoji not in used_emojis
         ]
 
         if not available_emojis:
-            raise ValueError(
-                "No unique emojis remain for this session."
-            )
+            raise ValueError("No unique emojis remain for this session.")
 
         emoji = secrets.choice(available_emojis)
 
@@ -153,14 +140,15 @@ class SessionService:
         )
 
         if session.status != "new":
-            raise ValueError(
-                "You cannot leave a session that has started."
-            )
+            raise ValueError("You cannot leave a session that has started.")
 
-        if await self._participants.get_by_user(
-            session.sessionid,
-            user_id,
-        ) is None:
+        if (
+            await self._participants.get_by_user(
+                session.sessionid,
+                user_id,
+            )
+            is None
+        ):
             raise ValueError("You are not signed up.")
 
         await self._participants.delete(
@@ -175,23 +163,15 @@ class SessionService:
         """Return session details and participant/assignment IDs."""
         session = await self.get_session(sessionname)
 
-        participants = await self._participants.get_by_session(
-            session.sessionid
-        )
-        assignments = await self._assignments.get_by_session(
-            session.sessionid
-        )
+        participants = await self._participants.get_by_session(session.sessionid)
+        assignments = await self._assignments.get_by_session(session.sessionid)
 
         return {
             "session": session,
             "participants": [
-                participant.participant_id
-                for participant in participants
+                participant.participant_id for participant in participants
             ],
-            "assignments": [
-                assignment.assignment_id
-                for assignment in assignments
-            ],
+            "assignments": [assignment.assignment_id for assignment in assignments],
         }
 
     async def start_session(
@@ -207,9 +187,7 @@ class SessionService:
         if session.status != "new":
             raise ValueError("Only new sessions can be started.")
 
-        participants = await self._participants.get_by_session(
-            session.sessionid
-        )
+        participants = await self._participants.get_by_session(session.sessionid)
 
         matching = self._matching_generator.generate(participants)
 
@@ -254,9 +232,7 @@ class SessionService:
         sessionname: str,
     ) -> list[Participant]:
         session = await self.get_session(sessionname)
-        return await self._participants.get_by_session(
-            session.sessionid
-        )
+        return await self._participants.get_by_session(session.sessionid)
 
     async def get_participant(
         self,
@@ -281,9 +257,7 @@ class SessionService:
         sessionname: str,
     ) -> list[GiftAssignment]:
         session = await self.get_session(sessionname)
-        return await self._assignments.get_by_session(
-            session.sessionid
-        )
+        return await self._assignments.get_by_session(session.sessionid)
 
     async def get_assignment(
         self,
@@ -302,7 +276,7 @@ class SessionService:
             raise ValueError("Assignment does not exist in this session.")
 
         return assignment
-    
+
     async def get_assignment_giver(
         self,
         *,
@@ -377,5 +351,3 @@ class SessionService:
             "participant_id": receiver.participant_id,
             "identity": identity,
         }
-
-    

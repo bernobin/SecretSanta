@@ -18,9 +18,7 @@ class SessionRepository:
 
     async def get_by_name(self, sessionname: str) -> Sessions | None:
         """Retrieve a session by its unique name."""
-        statement = select(Sessions).where(
-            Sessions.sessionname == sessionname
-        )
+        statement = select(Sessions).where(Sessions.sessionname == sessionname)
         result = await self._db.scalars(statement)
         return result.first()
 
@@ -71,14 +69,13 @@ class SessionRepository:
             raise ValueError("Session does not exist.")
 
         if status is not None and status not in {
-            "new", "started", "finished",
+            "new",
+            "started",
+            "finished",
         }:
             raise ValueError("Invalid session status.")
 
-        if (
-            admin_userid is not None
-            and await self._db.get(Users, admin_userid) is None
-        ):
+        if admin_userid is not None and await self._db.get(Users, admin_userid) is None:
             raise ValueError("Administrator does not exist.")
 
         if sessionname is not None:

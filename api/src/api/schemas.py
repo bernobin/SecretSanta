@@ -9,6 +9,7 @@ class APIModel(BaseModel):
 
 # USERS
 
+
 class UserResponse(APIModel):
     userid: int
     chatid: int
@@ -18,6 +19,7 @@ class UserResponse(APIModel):
 
 
 # SESSIONS
+
 
 class SessionResponse(APIModel):
     sessionid: int
@@ -41,6 +43,7 @@ class SessionStatusResponse(BaseModel):
 
 # PARTICIPANTS
 
+
 class ParticipantResponse(APIModel):
     participant_id: int
     user_id: int
@@ -50,6 +53,7 @@ class ParticipantResponse(APIModel):
 
 
 # GIFT ASSIGNMENTS
+
 
 class AssignmentResponse(APIModel):
     assignment_id: int
@@ -66,6 +70,7 @@ class AssignmentParticipantResponse(BaseModel):
 
 # REQUESTS
 
+
 class CreateUserRequest(BaseModel):
     chatid: int
     username: str | None = None
@@ -81,12 +86,14 @@ class CreateSessionRequest(BaseModel):
 
 # ERROR
 
+
 class APIErrorResponse(BaseModel):
     error: str
     message: str
 
 
 # SIGNUP
+
 
 class SignupResponse(ParticipantResponse):
     pass

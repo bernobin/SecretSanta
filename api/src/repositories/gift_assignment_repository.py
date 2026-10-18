@@ -43,9 +43,7 @@ class GiftAssignmentRepository:
         """Retrieve all assignments for a session."""
         statement = (
             select(GiftAssignment)
-            .where(
-                GiftAssignment.giver_session_id == session_id
-            )
+            .where(GiftAssignment.giver_session_id == session_id)
             .order_by(GiftAssignment.assignment_id)
         )
         result = await self._db.scalars(statement)
@@ -59,9 +57,7 @@ class GiftAssignmentRepository:
     ) -> GiftAssignment:
         """Persist an assignment between two participants."""
         if giver_participant_id == recipient_participant_id:
-            raise ValueError(
-                "A participant cannot be assigned to themselves."
-            )
+            raise ValueError("A participant cannot be assigned to themselves.")
 
         assignment = GiftAssignment(
             giver_session_id=session_id,

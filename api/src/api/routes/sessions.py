@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from src.api.dependencies import ApplicationServices, get_services
@@ -114,9 +113,7 @@ async def list_participants(
     services: ApplicationServices = Depends(get_services),
 ) -> list[ParticipantResponse]:
     try:
-        participants = await services.sessions.list_participants(
-            sessionname
-        )
+        participants = await services.sessions.list_participants(sessionname)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -124,8 +121,7 @@ async def list_participants(
         ) from exc
 
     return [
-        ParticipantResponse.model_validate(participant)
-        for participant in participants
+        ParticipantResponse.model_validate(participant) for participant in participants
     ]
 
 
@@ -161,19 +157,14 @@ async def list_assignments(
     services: ApplicationServices = Depends(get_services),
 ) -> list[AssignmentResponse]:
     try:
-        assignments = await services.sessions.list_assignments(
-            sessionname
-        )
+        assignments = await services.sessions.list_assignments(sessionname)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
 
-    return [
-        AssignmentResponse.model_validate(assignment)
-        for assignment in assignments
-    ]
+    return [AssignmentResponse.model_validate(assignment) for assignment in assignments]
 
 
 @router.get(

@@ -41,8 +41,7 @@ def request(method: str, path: str, **kwargs):
         console.print(
             Panel(
                 Text(
-                    f"HTTP {exc.response.status_code}\n"
-                    f"{exc.response.text}",
+                    f"HTTP {exc.response.status_code}\n{exc.response.text}",
                     style="red",
                 ),
                 title="[bold red]API Error[/]",
