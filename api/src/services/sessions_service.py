@@ -2,39 +2,20 @@ from datetime import datetime, timezone
 from typing import TypedDict
 import secrets
 
-from src.models import Participant, Sessions
+from src.models import GiftAssignment, Participant, Sessions
 from src.repositories.user_repository import UserRepository
 from src.repositories.session_repository import SessionRepository
 from src.repositories.gift_assignment_repository import GiftAssignmentRepository
 from src.repositories.participant_repository import ParticipantRepository
 
 from src.services.matching_generator import MatchingGenerator
-from src.services.matching_presenter import (
-    MatchingPresenter,
-    RevealedMatching,
-    AnonymizedMatching,
-)
-
-
-class StartSessionResult(TypedDict):
-    session: Sessions
-    matchings: list[AnonymizedMatching]
-
-
-class EndSessionResult(TypedDict):
-    session: Sessions
-    matchings: list[RevealedMatching]
-
-
-class ParticipantStatus(TypedDict):
-    user_id: int
-    username: str | None
-    emoji: str
+from src.services.matching_presenter import MatchingPresenter
 
 
 class SessionStatus(TypedDict):
     session: Sessions
-    participants: list[ParticipantStatus]
+    participants: list[int]
+    assignments: list[int]
 
 
 class SessionService:
@@ -191,37 +172,32 @@ class SessionService:
         self,
         sessionname: str,
     ) -> SessionStatus:
-        """Return the session and its participants with user details."""
+        """Return session details and participant/assignment IDs."""
         session = await self.get_session(sessionname)
 
         participants = await self._participants.get_by_session(
             session.sessionid
         )
-
-        participant_status: list[ParticipantStatus] = []
-
-        for participant in participants:
-            user = await self._users.get_by_id(participant.user_id)
-
-            participant_status.append({
-                "user_id": participant.user_id,
-                "username": (
-                    user.username
-                    if user and user.username
-                    else None
-                ),
-                "emoji": participant.emoji,
-            })
+        assignments = await self._assignments.get_by_session(
+            session.sessionid
+        )
 
         return {
             "session": session,
-            "participants": participant_status,
+            "participants": [
+                participant.participant_id
+                for participant in participants
+            ],
+            "assignments": [
+                assignment.assignment_id
+                for assignment in assignments
+            ],
         }
 
     async def start_session(
         self,
         sessionname: str,
-    ) -> StartSessionResult:
+    ) -> Sessions:
         """Generate and persist assignments, then start the session."""
         session = await self.get_session(
             sessionname,
@@ -235,7 +211,6 @@ class SessionService:
             session.sessionid
         )
 
-        # Matching generation is pure Python, so it remains synchronous.
         matching = self._matching_generator.generate(participants)
 
         for giver, receiver in matching:
@@ -245,33 +220,18 @@ class SessionService:
                 recipient_participant_id=receiver.participant_id,
             )
 
-        assignments = await self._assignments.get_by_session(
-            session.sessionid
-        )
-
-        # These calls are awaited because the presenter has a user repository.
-        anonymized_matchings = (
-            await self._matching_presenter.present_anonymized(
-                participants,
-                assignments,
-            )
-        )
-
         updated_session = await self._sessions.update(
             session.sessionid,
             status="started",
             started_at=datetime.now(timezone.utc),
         )
 
-        return {
-            "session": updated_session,
-            "matchings": anonymized_matchings,
-        }
+        return updated_session
 
     async def end_session(
         self,
         sessionname: str,
-    ) -> EndSessionResult:
+    ) -> Sessions:
         """Finish the session and reveal the assignments."""
         session = await self.get_session(
             sessionname,
@@ -281,25 +241,141 @@ class SessionService:
         if session.status != "started":
             raise ValueError("Only started sessions can be ended.")
 
-        participants = await self._participants.get_by_session(
-            session.sessionid
-        )
-        assignments = await self._assignments.get_by_session(
-            session.sessionid
-        )
-
-        matchings = await self._matching_presenter.present(
-            participants,
-            assignments,
-        )
-
         updated_session = await self._sessions.update(
             session.sessionid,
             status="finished",
             ended_at=datetime.now(timezone.utc),
         )
 
+        return updated_session
+
+    async def list_participants(
+        self,
+        sessionname: str,
+    ) -> list[Participant]:
+        session = await self.get_session(sessionname)
+        return await self._participants.get_by_session(
+            session.sessionid
+        )
+
+    async def get_participant(
+        self,
+        *,
+        sessionname: str,
+        participant_id: int,
+    ) -> Participant:
+        session = await self.get_session(sessionname)
+
+        participant = await self._participants.get_by_id(
+            session.sessionid,
+            participant_id,
+        )
+
+        if participant is None:
+            raise ValueError("Participant does not exist in this session.")
+
+        return participant
+
+    async def list_assignments(
+        self,
+        sessionname: str,
+    ) -> list[GiftAssignment]:
+        session = await self.get_session(sessionname)
+        return await self._assignments.get_by_session(
+            session.sessionid
+        )
+
+    async def get_assignment(
+        self,
+        *,
+        sessionname: str,
+        assignment_id: int,
+    ) -> GiftAssignment:
+        session = await self.get_session(sessionname)
+
+        assignment = await self._assignments.get_by_id(
+            session.sessionid,
+            assignment_id,
+        )
+
+        if assignment is None:
+            raise ValueError("Assignment does not exist in this session.")
+
+        return assignment
+    
+    async def get_assignment_giver(
+        self,
+        *,
+        sessionname: str,
+        assignment_id: int,
+    ) -> dict[str, int | str]:
+        session = await self.get_session(sessionname)
+
+        assignment = await self._assignments.get_by_id(
+            session.sessionid,
+            assignment_id,
+        )
+
+        if assignment is None:
+            raise ValueError("Assignment does not exist in this session.")
+
+        giver = await self._participants.get_by_id(
+            session.sessionid,
+            assignment.giver_participant_id,
+        )
+
+        if giver is None:
+            raise ValueError("Giver participant does not exist.")
+
+        if session.status == "finished":
+            user = await self._users.get_by_id(giver.user_id)
+            identity = (
+                user.username or user.first_name or str(giver.user_id)
+                if user is not None
+                else str(giver.user_id)
+            )
+        else:
+            identity = giver.emoji
+
         return {
-            "session": updated_session,
-            "matchings": matchings,
+            "participant_id": giver.participant_id,
+            "identity": identity,
         }
+
+    async def get_assignment_receiver(
+        self,
+        *,
+        sessionname: str,
+        assignment_id: int,
+    ) -> dict[str, int | str]:
+        session = await self.get_session(sessionname)
+
+        assignment = await self._assignments.get_by_id(
+            session.sessionid,
+            assignment_id,
+        )
+
+        if assignment is None:
+            raise ValueError("Assignment does not exist in this session.")
+
+        receiver = await self._participants.get_by_id(
+            session.sessionid,
+            assignment.recipient_participant_id,
+        )
+
+        if receiver is None:
+            raise ValueError("Receiver participant does not exist.")
+
+        user = await self._users.get_by_id(receiver.user_id)
+        identity = (
+            user.username or user.first_name or str(receiver.user_id)
+            if user is not None
+            else str(receiver.user_id)
+        )
+
+        return {
+            "participant_id": receiver.participant_id,
+            "identity": identity,
+        }
+
+    
