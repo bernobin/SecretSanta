@@ -10,6 +10,19 @@ class GiftAssignmentRepository:
     def __init__(self, db: AsyncSession) -> None:
         self._db = db
 
+    async def get_by_id(
+        self,
+        session_id: int,
+        assignment_id: int,
+    ) -> GiftAssignment | None:
+        """Retrieve an assignment within a specific session."""
+        statement = select(GiftAssignment).where(
+            GiftAssignment.giver_session_id == session_id,
+            GiftAssignment.assignment_id == assignment_id,
+        )
+        result = await self._db.scalars(statement)
+        return result.first()
+
     async def get_for_giver(
         self,
         session_id: int,

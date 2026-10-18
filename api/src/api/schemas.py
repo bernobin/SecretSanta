@@ -33,6 +33,12 @@ class SessionDetailResponse(SessionResponse):
     admin: UserResponse
 
 
+class SessionStatusResponse(BaseModel):
+    session: SessionResponse
+    participants: list[int]
+    assignments: list[int]
+
+
 # PARTICIPANTS
 
 class ParticipantResponse(APIModel):
@@ -43,13 +49,9 @@ class ParticipantResponse(APIModel):
     emoji: str
 
 
-class ParticipantDetailResponse(ParticipantResponse):
-    user: UserResponse
-
-
 # GIFT ASSIGNMENTS
 
-class GiftAssignmentResponse(APIModel):
+class AssignmentResponse(APIModel):
     assignment_id: int
     giver_session_id: int
     giver_participant_id: int
@@ -57,9 +59,9 @@ class GiftAssignmentResponse(APIModel):
     recipient_session_id: int
 
 
-class GiftAssignmentDetailResponse(GiftAssignmentResponse):
-    giver: ParticipantDetailResponse
-    recipient: ParticipantDetailResponse
+class AssignmentParticipantResponse(BaseModel):
+    participant_id: int
+    identity: str
 
 
 # REQUESTS
@@ -84,36 +86,7 @@ class APIErrorResponse(BaseModel):
     message: str
 
 
-class ParticipantStatusResponse(BaseModel):
-    user_id: int
-    username: str | None
-    emoji: str
-
-
-class SessionStatusResponse(BaseModel):
-    session: SessionResponse
-    participants: list[ParticipantStatusResponse]
-
-
-class AnonymizedMatchingResponse(BaseModel):
-    giver_emoji: str
-    receiver: str
-
-
-class RevealedMatchingResponse(BaseModel):
-    giver: str
-    receiver: str
-
-
-class StartSessionResponse(BaseModel):
-    session: SessionResponse
-    matchings: list[AnonymizedMatchingResponse]
-
-
-class EndSessionResponse(BaseModel):
-    session: SessionResponse
-    matchings: list[RevealedMatchingResponse]
-
+# SIGNUP
 
 class SignupResponse(ParticipantResponse):
     pass

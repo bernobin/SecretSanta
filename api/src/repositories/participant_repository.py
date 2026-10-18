@@ -10,6 +10,19 @@ class ParticipantRepository:
     def __init__(self, db: AsyncSession) -> None:
         self._db = db
 
+    async def get_by_id(
+        self,
+        session_id: int,
+        participant_id: int,
+    ) -> Participant | None:
+        """Retrieve a participant within a specific session."""
+        statement = select(Participant).where(
+            Participant.session_id == session_id,
+            Participant.participant_id == participant_id,
+        )
+        result = await self._db.scalars(statement)
+        return result.first()
+
     async def get_by_user(
         self,
         session_id: int,
