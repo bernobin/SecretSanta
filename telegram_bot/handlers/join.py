@@ -14,6 +14,9 @@ async def join(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
 
     if not chat or chat.type != ChatType.PRIVATE:
+        await update.effective_message.reply_text(
+            "Please use this command in a private chat with me."
+        )
         return
 
     user = await require_registered_user(update, context)
@@ -37,3 +40,4 @@ async def join(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.effective_message.reply_text(
         f"You're in! Your session emoji is {emoji}"
     )
+    
