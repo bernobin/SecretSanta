@@ -68,12 +68,20 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 giver = await client.get_giver(name, assignment_id)
                 receiver = await client.get_receiver(name, assignment_id)
 
-                giver_user = participant_users[giver["participant_id"]]
-                receiver_user = participant_users[receiver["participant_id"]]
+                receiver_user = participant_users[
+                    receiver["participant_id"]
+                ]
+
+                if session.get("status") != "finished":
+                    giver_name = giver["identity"]
+                else:
+                    giver_user = participant_users[
+                        giver["participant_id"]
+                    ]
+                    giver_name = display_name(giver_user)
 
                 lines.append(
-                    f"{display_name(giver_user)} → "
-                    f"{display_name(receiver_user)}"
+                    f"{giver_name} → {display_name(receiver_user)}"
                 )
         else:
             lines.extend(["", "Assignments have not been drawn yet."])
