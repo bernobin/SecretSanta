@@ -34,13 +34,16 @@ async def report_api_error(update: Update, error: APIError):
     if message is None:
         return
 
+
+async def report_api_error(update: Update, error: APIError):
+    message = update.effective_message
+    if message is None:
+        return
+
     if error.status_code == 0:
         text = "The Secret Santa API is unavailable. Please try again later."
     else:
-        text = (
-            "The request failed. Check the session name and your permissions, "
-            "then try again."
-        )
+        text = error.detail or "The request failed. Please try again."
 
     await message.reply_text(text)
 
