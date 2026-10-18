@@ -53,14 +53,16 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if assignment_ids:
             lines.extend(["", "🎄 Assignments:"])
 
-            # Build a lookup from participant ID to Telegram user.
+            # Map participant IDs to their Telegram user objects.
             participant_users = {}
 
             for participant in participants:
                 participant_user = await client.get_user(
                     participant["user_id"]
                 )
-                participant_users[participant["id"]] = participant_user
+                participant_users[participant["participant_id"]] = (
+                    participant_user
+                )
 
             for assignment_id in assignment_ids:
                 giver = await client.get_giver(name, assignment_id)
@@ -75,8 +77,6 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
         else:
             lines.extend(["", "Assignments have not been drawn yet."])
-
-
 
         await update.effective_message.reply_text("\n".join(lines))
 
