@@ -33,15 +33,22 @@ class SecretSantaAPI:
             logger.warning("API connection error: %s", exc)
             raise APIError(0, "The API is unavailable.") from exc
 
+
         if not response.is_success:
             logger.warning(
                 "%s %s returned HTTP %s: %s",
                 method, path, response.status_code, response.text[:500],
             )
-            raise APIError(
-                response.status_code,
-                f"API request failed ({response.status_code}).",
-            )
+
+            try:
+                data = response.json()
+                message = data.get("detail", "The request failed. Please try again.")
+                if not isinstance(message, str):
+                    message = "The request failed. Please try again."
+            except ValueError:
+                message = "The request failed. Please try again."
+
+            raise APIError(response.status_code, message)
 
         if response.status_code == 204 or not response.content:
             return None

@@ -43,7 +43,7 @@ async def report_api_error(update: Update, error: APIError):
     if error.status_code == 0:
         text = "The Secret Santa API is unavailable. Please try again later."
     else:
-        text = error.detail or "The request failed. Please try again."
+        text = error.message or "The request failed. Please try again."
 
     await message.reply_text(text)
 
