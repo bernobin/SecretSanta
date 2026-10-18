@@ -49,6 +49,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
             lines.append("No participants yet.")
 
 
+
         assignment_ids = result.get("assignments") or []
 
         if assignment_ids:
@@ -57,11 +58,28 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
             for assignment_id in assignment_ids:
                 giver = await client.get_giver(name, assignment_id)
                 receiver = await client.get_receiver(name, assignment_id)
+
+                giver_participant = await client.get_participant(
+                    name, giver["participant_id"]
+                )
+                receiver_participant = await client.get_participant(
+                    name, receiver["participant_id"]
+                )
+
+                giver_user = await client.get_user(
+                    giver_participant["user_id"]
+                )
+                receiver_user = await client.get_user(
+                    receiver_participant["user_id"]
+                )
+
                 lines.append(
-                    f"{giver['identity']} → {receiver['identity']}"
+                    f"{display_name(giver_user)} → "
+                    f"{display_name(receiver_user)}"
                 )
         else:
             lines.extend(["", "Assignments have not been drawn yet."])
+
 
         await update.effective_message.reply_text("\n".join(lines))
 
