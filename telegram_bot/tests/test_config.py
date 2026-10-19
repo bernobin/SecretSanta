@@ -23,6 +23,13 @@ class LoadSettingsTests(unittest.TestCase):
         with self.assertRaises(KeyError):
             load_settings({})
 
+    def test_rejects_whitespace_only_token(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "must not be empty",
+        ):
+            load_settings({"TELEGRAM_BOT_TOKEN": "   "})
+
 
 if __name__ == "__main__":
     unittest.main()
