@@ -1,3 +1,5 @@
+Writing
+
 # Secret Santa Telegram Bot — Agent Guidelines
 
 ## Project overview
@@ -22,7 +24,8 @@ Develop the bot incrementally and deliberately.
 - Explain the purpose of each change before introducing it.
 - Verify each step with relevant tests and type checks before proceeding.
 - Do not make assumptions about the API contract. Inspect the checked-in OpenAPI schema and generated client before implementing API integration.
-- Prefer simple solutions over unnecessary abstractions.
+- Prefer simple solutions over unnecessary abstractions, but do not reject an abstraction merely because an earlier implementation proved unsuccessful.
+- Treat architectural experiments as learning opportunities. Preserve the underlying goals when revising an approach.
 - Do not repeat completed setup work unless a change makes it necessary.
 - Keep project documentation synchronized with the actual repository state.
 
@@ -89,18 +92,20 @@ The current baseline passes Pyright with zero errors, warnings, or informational
 
 ## Testability and dependency injection
 
-Every function should be easy to test without installing mocking libraries.
+Every function and component should be designed so its behavior can be verified without depending unnecessarily on external frameworks, services, or mocking libraries.
 
 Prefer explicit dependency injection and ordinary Python objects.
 
 - Application functions should receive their dependencies as parameters.
 - Use `typing.Protocol` to define interfaces where components need to depend on an abstraction.
-- Use handwritten fake implementations of those interfaces in unit tests.
-- Avoid mocking libraries and unnecessary monkey-patching.
-- Keep global state and environment access at the application boundary.
-- Do not make business logic depend directly on Telegram framework objects, HTTP details, or generated-client internals.
+- Write handwritten fake implementations of those interfaces for unit tests.
+- Do not import mocking libraries such as `unittest.mock`, use automatically generated mocks, or rely on magic mocking frameworks. Test doubles should be explicit Python code that we own and understand.
+- Avoid unnecessary monkey-patching and hidden global state.
+- Keep environment access at the application boundary.
+- Test meaningful behavior through observable outcomes rather than implementation details.
 - Use integration tests when real HTTP/API behavior needs to be verified.
-- Test both successful operations and expected application-level failures.
+- Test successful operations, expected application-level failures, and resource cleanup where relevant.
+- Prefer dependency injection over complicated test setup that attempts to intercept framework internals.
 
 ### Environment configuration
 
@@ -130,6 +135,22 @@ The production entry point reads `os.environ` and passes it to `load_settings()`
 Tests pass ordinary dictionaries directly. Configuration parsing must not access global environment variables itself.
 
 Keep API configuration, including the API base URL, explicit as the integration is introduced. Validate required settings at startup and never log secrets.
+
+### Testing framework boundaries
+
+The Telegram framework is an external adapter, not the application itself. Its types and lifecycle should not spread unnecessarily into application logic.
+
+The objective is a clear, testable boundary between our application and `python-telegram-bot`, while still allowing the framework to manage the Telegram-specific behavior it is responsible for.
+
+- Keep Telegram update objects, handlers, application objects, and framework-specific types inside the Telegram adapter wherever practical.
+- Let the application layer depend on application-owned interfaces and types rather than Telegram framework objects.
+- Make the construction and execution of the Telegram adapter independently testable.
+- Use explicit dependencies and handwritten fakes to test application behavior without running a Telegram bot or connecting to Telegram.
+- When framework behavior itself needs verification, use an appropriate integration test rather than assuming a unit test proves that the real framework behaves correctly.
+- Keep strict type checking enabled at the framework boundary. If the framework's generic types or annotations require a suppression, scope it narrowly to the specific boundary expression and document why it is necessary.
+- Explore alternative boundary designs when the current design makes dependencies difficult to see, behavior difficult to test, or framework types difficult to contain.
+
+Dependency injection, adapter interfaces, factories, and lifecycle hooks are possible design tools. Choose between them based on the behavior we need to test and the clarity of the resulting application code, not by committing prematurely to one pattern.
 
 ## API client generation
 
@@ -171,14 +192,18 @@ Treat the generated package metadata as an input to dependency management, not a
 
 Keep the following responsibilities separate as the project grows:
 
-- **Telegram adapter:** Handles Telegram updates, commands, callbacks, keyboards, and message presentation.
+- **Telegram adapter:** Handles Telegram updates, commands, callbacks, keyboards, message presentation, and framework-specific startup and shutdown.
 - **Application layer:** Implements use cases and coordinates operations through injected interfaces.
 - **API adapter:** Translates application operations into generated-client calls and maps API responses and errors into application-level results.
 - **Configuration and startup:** Reads environment variables, constructs dependencies, and starts the application.
 
 Application use cases should be testable without Telegram, HTTP requests, Docker, or a running database.
 
-Do not introduce abstractions without a concrete use case that benefits from them. Start with the smallest interface that allows application logic to be tested independently of the generated client.
+The application should make its dependencies explicit. For example, constructing the API client in the composition root and passing it to the Telegram adapter makes that dependency visible and replaceable.
+
+The framework boundary deserves the same attention. The application should be able to control when the adapter is constructed and started, and how resources are cleaned up, without requiring application logic to understand Telegram framework internals.
+
+Explore the smallest design that achieves these goals. Do not introduce abstractions without a concrete use case, but do not confuse avoiding unnecessary abstraction with avoiding useful architectural boundaries.
 
 ### API integration principles
 
@@ -190,7 +215,7 @@ Do not introduce abstractions without a concrete use case that benefits from the
 - Avoid exposing internal exception details or sensitive API responses to Telegram users.
 - Never assume an operation is idempotent unless the API contract or implementation establishes that behavior.
 - Do not automatically retry operations that may create or mutate data without considering duplicate side effects.
-- Close asynchronous HTTP resources during application shutdown.
+- Close asynchronous HTTP resources during application shutdown. Ensure cleanup also occurs when startup or execution fails, according to the resource's ownership and lifecycle.
 
 ## Docker and Compose
 
@@ -225,9 +250,14 @@ Completed:
 12. Inspected representative generated endpoint implementations, models, client configuration, and error handling.
 13. Configured strict type checking to avoid unrelated diagnostics in generated code without relaxing application-code checks.
 14. Removed generated Ruff cache artifacts.
-15. Verified the current baseline:
+15. Implemented explicit API client construction through `create_api_client(settings)`, including an asynchronous HTTP client configured with the supplied API base URL.
+16. Added an API client construction test.
+17. Introduced a Telegram adapter that receives the Telegram token and API client explicitly and builds the framework application.
+18. Kept Telegram framework generic types within the adapter and resolved the resulting strict Pyright diagnostics.
+19. Explored a lifecycle abstraction for Telegram application creation, execution, and cleanup. The experiment was rolled back because it did not make framework injection sufficiently clear in the composition root. The architectural goal of a clean, testable framework boundary remains open for future work.
+20. Verified the current baseline:
     - `pyright .`: zero errors, warnings, or informational diagnostics.
-    - `python -m unittest discover -s tests -v`: 4 tests pass.
+    - `python -m unittest discover -s tests -v`: 9 tests pass.
     - `python -m pip check`: no broken requirements.
 
 Run these commands from `telegram_bot/`:
@@ -238,20 +268,22 @@ python -m unittest discover -s tests -v
 python -m pip check
 ```
 
-The current tests cover configuration only. API integration and Telegram behavior have not yet been established by tests.
+The current tests cover configuration, API client construction, and API base URL configuration. Telegram runtime behavior and the final framework boundary have not yet been established by dedicated tests.
 
 ## Immediate next steps
 
 Proceed one verified step at a time. Do not implement the whole bot at once.
 
 1. **Review the current application entry point and configuration.** Confirm that `load_settings(environ)` is implemented and tested, and identify what is still missing for startup.
-2. **Create the minimal asynchronous Telegram application entry point.** Use the installed `python-telegram-bot` version, inject validated settings, and avoid adding business logic yet.
-3. **Introduce API configuration and a minimal API adapter interface.** Use the generated client's actual types and asynchronous methods. Keep the adapter small and application-specific.
-4. **Implement user registration as the first vertical slice.** Inspect the actual create-user and user-retrieval endpoint behavior before deciding how Telegram users map to API users.
-5. **Write unit tests using handwritten fakes.** Verify registration and error handling without Telegram, HTTP requests, or a running API.
-6. **Connect the use case to one Telegram handler.** Keep Telegram-specific concerns out of the application logic.
-7. **Verify the vertical slice.** Run tests, strict Pyright, and dependency checks before proceeding to session management.
-8. **Add Docker integration and broader automated checks** after the first vertical slice works.
+2. **Review the current Telegram adapter.** Identify which responsibilities still depend directly on `python-telegram-bot` and which can be expressed through application-owned interfaces.
+3. **Explore a testable Telegram boundary.** Define a concrete behavior that should be testable, choose the smallest suitable interface, and demonstrate that a handwritten fake can verify it without running the Telegram framework or connecting to Telegram.
+4. **Keep dependency construction explicit.** Ensure that `main()` clearly shows where settings, the API client, and the Telegram adapter are constructed and how they are connected.
+5. **Introduce the smallest useful API adapter interface.** Use the generated client's actual types and asynchronous methods. Keep the adapter small and application-specific.
+6. **Implement user registration as the first vertical slice.** Inspect the actual create-user and user-retrieval endpoint behavior before deciding how Telegram users map to API users.
+7. **Write unit tests using handwritten fakes.** Verify registration and error handling without Telegram, HTTP requests, or a running API.
+8. **Connect the use case to one Telegram handler.** Keep Telegram-specific concerns out of the application logic.
+9. **Verify the vertical slice.** Run tests, strict Pyright, and dependency checks before proceeding to session management.
+10. **Add Docker integration and broader automated checks** after the first vertical slice works.
 
 Do not repeat schema export or client generation unless the contract changes or a reproducibility check requires it. Do not implement session commands, participant management, assignment display, and administration all in the same step.
 
